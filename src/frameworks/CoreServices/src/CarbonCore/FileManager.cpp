@@ -63,11 +63,11 @@ int readFinderInfo(int fd, FinderInfo& info)
 	return errno;
 }
 
-OSStatus getCatalogForkInfo(const char* path, FSCatalogInfoBitmap flags, FSCatalogInfo* info)
+OSErr getCatalogForkInfo(const char* path, FSCatalogInfoBitmap flags, FSCatalogInfo* info)
 {
 	int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fd < 0)
-		return makeOSStatus(errno);
+		return Darling::macFileError(errno);
 
 	int error = 0;
 	if (flags & finderInfoBits) {
@@ -86,7 +86,7 @@ OSStatus getCatalogForkInfo(const char* path, FSCatalogInfoBitmap flags, FSCatal
 			error = errno;
 	}
 	close(fd);
-	return error ? makeOSStatus(error) : noErr;
+	return Darling::macFileError(error);
 }
 
 }
@@ -200,7 +200,7 @@ OSStatus FSRefMakePath(const FSRef* fsref, uint8_t* path, uint32_t maxSize)
 	return noErr;
 }
 
-OSStatus FSGetCatalogInfo(const FSRef* ref, uint32_t infoBits, FSCatalogInfo* infoOut, HFSUniStr255* nameOut, FSSpecPtr fsspec, FSRef* parentDir)
+OSErr FSGetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap infoBits, FSCatalogInfo* infoOut, HFSUniStr255* nameOut, FSSpecPtr fsspec, FSRef* parentDir)
 {
 	std::string path;
 
@@ -236,7 +236,7 @@ OSStatus FSGetCatalogInfo(const FSRef* ref, uint32_t infoBits, FSCatalogInfo* in
 		memset(infoOut, 0, sizeof(*infoOut));
 
 		if (::stat(path.c_str(), &st) != 0)
-			return makeOSStatus(errno);
+			return Darling::macFileError(errno);
 
 		if (infoBits & kFSCatInfoNodeFlags)
 		{
@@ -322,7 +322,7 @@ OSErr FSSetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap whichInfo, const FS
 		return fnfErr;
 	int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fd < 0)
-		return errno == EACCES || errno == EPERM ? permErr : ioErr;
+		return Darling::macFileError(errno);
 
 	FinderInfo current{};
 	int error = readFinderInfo(fd, current);
@@ -336,13 +336,7 @@ OSErr FSSetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap whichInfo, const FS
 			error = errno;
 	}
 	close(fd);
-	if (error == EACCES || error == EPERM)
-		return permErr;
-	if (error == EROFS)
-		return wPrErr;
-	if (error == ENOTSUP)
-		return unimpErr;
-	return error ? ioErr : noErr;
+	return Darling::macFileError(error);
 }
 
 bool hasgid(gid_t gid)

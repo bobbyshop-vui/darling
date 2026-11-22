@@ -225,7 +225,7 @@ CFURLRef CFURLCreateFromFSRef(CFAllocatorRef alloc, struct FSRef* location); // 
 OSStatus FSFindFolder(long vRefNum, OSType folderType, Boolean createFolder, struct FSRef* location);
 OSStatus FSDeleteObject(const FSRef* fsref);
 
-OSStatus FSGetCatalogInfo(const FSRefPtr ref, uint32_t infoBits, struct FSCatalogInfo* infoOut, struct HFSUniStr255* nameOut, FSSpecPtr fsspec, FSRefPtr parentDir);
+OSErr FSGetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap infoBits, FSCatalogInfo* infoOut, struct HFSUniStr255* nameOut, FSSpecPtr fsspec, FSRef* parentDir);
 OSErr FSSetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap whichInfo, const FSCatalogInfo* catalogInfo);
 
 OSErr PBCreateDirectoryUnicodeSync(struct FSRefParam* paramBlock);

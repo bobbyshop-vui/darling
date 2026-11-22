@@ -55,30 +55,13 @@ std::mutex forkLock;
 std::map<FSIORefNum, std::unique_ptr<OpenFork>> openForks;
 FSIORefNum nextForkRefNum = 1;
 
-OSErr forkError(int error)
-{
-	switch (error) {
-		case ENOENT: return fnfErr;
-		case ENOTDIR: return dirNFErr;
-		case EACCES:
-		case EPERM: return permErr;
-		case EROFS: return wPrErr;
-		case EMFILE:
-		case ENFILE: return tmfoErr;
-		case ENOSPC:
-		case EFBIG: return dskFulErr;
-		case ENOTSUP: return unimpErr;
-		default: return ioErr;
-	}
-}
-
 OSErr transferResourceFork(OpenFork& fork, UInt16 mode, SInt64 offset,
 		ByteCount count, void* buffer, ByteCount* actualCount, bool writing)
 {
 	ssize_t size = fgetxattr(fork.fd, Darling::resourceForkAttribute, nullptr, 0, 0, 0);
 	if (size < 0) {
 		if (!Darling::fileAttributeMissing(errno))
-			return forkError(errno);
+			return Darling::macFileError(errno);
 		size = 0;
 	}
 
@@ -86,7 +69,7 @@ OSErr transferResourceFork(OpenFork& fork, UInt16 mode, SInt64 offset,
 	if (size > 0) {
 		ssize_t bytesRead = fgetxattr(fork.fd, Darling::resourceForkAttribute, data.data(), data.size(), 0, 0);
 		if (bytesRead < 0)
-			return forkError(errno);
+			return Darling::macFileError(errno);
 		data.resize(bytesRead);
 	}
 
@@ -120,7 +103,7 @@ OSErr transferResourceFork(OpenFork& fork, UInt16 mode, SInt64 offset,
 		data.resize(std::max(data.size(), static_cast<size_t>(position + count)));
 		std::memcpy(data.data() + position, buffer, count);
 		if (fsetxattr(fork.fd, Darling::resourceForkAttribute, data.data(), data.size(), 0, 0) != 0)
-			return forkError(errno);
+			return Darling::macFileError(errno);
 	}
 
 	fork.mark = position + count;
@@ -176,7 +159,7 @@ OSErr transferFork(FSIORefNum refNum, UInt16 mode, SInt64 offset,
 		transferred = writing ? write(fork.fd, buffer, count) : read(fork.fd, buffer, count);
 	} while (transferred < 0 && errno == EINTR);
 	if (transferred < 0)
-		return forkError(errno);
+		return Darling::macFileError(errno);
 	if (actualCount)
 		*actualCount = transferred;
 	if (static_cast<ByteCount>(transferred) == count)
@@ -238,7 +221,7 @@ OSErr FSOpenFork(const FSRef* ref, UniCharCount forkNameLength, const UniChar* f
 		fd = open(path, flags | O_CLOEXEC | O_NONBLOCK);
 	}
 	if (fd < 0)
-		return forkError(errno);
+		return Darling::macFileError(errno);
 
 	std::unique_ptr<OpenFork> fork(new (std::nothrow) OpenFork{fd, resource, flags});
 	if (!fork) {
@@ -247,13 +230,13 @@ OSErr FSOpenFork(const FSRef* ref, UniCharCount forkNameLength, const UniChar* f
 	}
 	struct stat st;
 	if (fstat(fd, &st) != 0)
-		return forkError(errno);
+		return Darling::macFileError(errno);
 	if (!S_ISREG(st.st_mode))
 		return notAFileErr;
 
 	if (resource && fgetxattr(fd, Darling::resourceForkAttribute, nullptr, 0, 0, 0) < 0) {
 		if (!Darling::fileAttributeMissing(errno))
-			return forkError(errno);
+			return Darling::macFileError(errno);
 		if (flags == O_RDONLY)
 			return errFSForkNotFound;
 	}
@@ -295,7 +278,7 @@ OSErr FSCloseFork(FSIORefNum refNum)
 	int fd = found->second->fd;
 	found->second->fd = -1;
 	openForks.erase(found);
-	return close(fd) == 0 ? noErr : forkError(errno);
+	return close(fd) == 0 ? noErr : Darling::macFileError(errno);
 }
 
 OSErr FSGetVolumeInfo(FSVolumeRefNum volume, ItemCount volumeIndex, FSVolumeRefNum *actualVolume, FSVolumeInfoBitmap whichInfo, FSVolumeInfo *info, HFSUniStr255 *volumeName, FSRef *rootDirectory)
