@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+NSString * const QTMovieURLAttribute = @"QTMovieURLAttribute";
+
 static int verbose = 0;
 
 __attribute__((constructor))
