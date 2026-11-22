@@ -81,6 +81,7 @@ extern const CFStringRef kCVPixelBufferOpenGLCompatibilityKey;
 extern const CFStringRef kCVPixelBufferPixelFormatTypeKey;
 extern const CFStringRef kCVPixelBufferMetalCompatibilityKey;
 extern const CFStringRef kCVPixelBufferBytesPerRowAlignmentKey;
+extern const CFStringRef kCVPixelBufferPlaneAlignmentKey;
 extern const CFStringRef kCVPixelBufferHeightKey;
 extern const CFStringRef kCVPixelBufferWidthKey;
 

@@ -48,6 +48,7 @@ const CFStringRef kCVPixelBufferOpenGLCompatibilityKey = CFSTR("OpenGLCompatibil
 const CFStringRef kCVPixelBufferPixelFormatTypeKey = CFSTR("PixelFormatType");
 const CFStringRef kCVPixelBufferMetalCompatibilityKey = CFSTR("MetalCompatibility");
 const CFStringRef kCVPixelBufferBytesPerRowAlignmentKey = CFSTR("BytesPerRowAlignment");
+const CFStringRef kCVPixelBufferPlaneAlignmentKey = CFSTR("PlaneAlignment");
 const CFStringRef kCVPixelBufferHeightKey = CFSTR("Height");
 const CFStringRef kCVPixelBufferWidthKey = CFSTR("Width");
 const CFStringRef kCVPixelBufferIOSurfaceOpenGLTextureCompatibilityKey = CFSTR("IOSurfaceOpenGLTextureCompatibility");
