@@ -1,6 +1,7 @@
 #include <LaunchServices/LaunchServices.h>
 #include <LaunchServices/LaunchServicesPriv.h>
 #include <CarbonCore/MacErrors.h>
+#include <CoreFoundation/CFBundle.h>
 #include <unistd.h>
 #include <string>
 #include <memory>
@@ -9,6 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <limits.h>
 #include <unicode/unistr.h>
 #include <CoreServices/UniChar.h>
 
@@ -103,6 +105,9 @@ OSStatus LSTerm(void)
 static
 int execvpe(const char* name, char** argv, char** envp)
 {
+	if (!envp)
+		return execvp(name, argv);
+
 	char** orig_env;
 	int ret;
 
@@ -115,73 +120,107 @@ int execvpe(const char* name, char** argv, char** envp)
 	return ret;
 }
 
+static bool cfStringToUTF8(CFStringRef value, std::string& result)
+{
+	if (!value || CFGetTypeID(value) != CFStringGetTypeID())
+		return false;
+
+	CFIndex capacity = CFStringGetMaximumSizeForEncoding(CFStringGetLength(value), kCFStringEncodingUTF8) + 1;
+	if (capacity <= 0)
+		return false;
+
+	std::vector<char> buffer((size_t) capacity);
+	if (!CFStringGetCString(value, buffer.data(), capacity, kCFStringEncodingUTF8))
+		return false;
+
+	result.assign(buffer.data());
+	return true;
+}
+
 OSStatus LSOpenApplication(const LSApplicationParameters *appParams, ProcessSerialNumber *outPSN)
 {
-	if (!appParams)
+	if (!appParams || !appParams->application)
 		return paramErr;
 
-	std::string exePath;
+	std::string bundlePath;
 	std::vector<char*> argv;
+	std::vector<std::string> argumentStorage;
 	std::unique_ptr<std::vector<char*>> envp;
+	std::vector<std::string> envStrings;
 	int pipefds[2];
 	pid_t pid;
 	OSStatus rv = noErr;
 
-	if (!FSRefMakePath(appParams->application, exePath))
+	if (!FSRefMakePath(appParams->application, bundlePath))
 		return fnfErr;
+
+	CFURLRef bundleURL = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault,
+		(const UInt8*) bundlePath.c_str(), bundlePath.length(), true);
+	if (!bundleURL)
+		return fnfErr;
+
+	CFBundleRef bundle = CFBundleCreate(kCFAllocatorDefault, bundleURL);
+	CFRelease(bundleURL);
+	if (!bundle)
+		return kLSApplicationNotFoundErr;
+
+	CFURLRef executableURL = CFBundleCopyExecutableURL(bundle);
+	CFRelease(bundle);
+	if (!executableURL)
+		return kLSApplicationNotFoundErr;
+
+	std::vector<UInt8> executablePathBuffer(PATH_MAX);
+	if (!CFURLGetFileSystemRepresentation(executableURL, true, executablePathBuffer.data(), executablePathBuffer.size()))
+	{
+		CFRelease(executableURL);
+		return fnfErr;
+	}
+	CFRelease(executableURL);
+	std::string exePath((const char*) executablePathBuffer.data());
 
 	if (appParams->argv != nullptr)
 	{
 		CFIndex count = CFArrayGetCount(appParams->argv);
+		argumentStorage.reserve((size_t) count);
 
 		for (CFIndex i = 0; i < count; i++)
 		{
 			CFStringRef ref = (CFStringRef) CFArrayGetValueAtIndex(appParams->argv, i);
-			if (CFGetTypeID(ref) != CFStringGetTypeID())
+			std::string argument;
+			if (!cfStringToUTF8(ref, argument))
 				return paramErr;
-
-			argv.push_back((char*) CFStringGetCStringPtr((CFStringRef) CFArrayGetValueAtIndex(appParams->argv, i), kCFStringEncodingUTF8));
+			argumentStorage.push_back(argument);
 		}
+
+		argv.reserve(argumentStorage.size() + 2);
+		argv.push_back((char*) exePath.c_str());
+		for (std::string& argument : argumentStorage)
+			argv.push_back((char*) argument.c_str());
 		argv.push_back(nullptr);
 	}
 	else
-	{
-		argv.push_back((char*) exePath.c_str());
-		argv.push_back(nullptr);
-	}
+		argv = { (char*) exePath.c_str(), nullptr };
 
 	if (appParams->environment != nullptr)
 	{
-		CFIndex count = CFDictionaryGetCount(appParams->environment);
-		envp.reset(new std::vector<char*>);
-		
+		envStrings.reserve((size_t) CFDictionaryGetCount(appParams->environment));
 		CFDictionaryApplyFunction(appParams->environment, [](const void* key, const void* value, void* context) {
-					CFStringRef skey = (CFStringRef) key;
-					CFStringRef svalue = (CFStringRef) value;
-					std::vector<const char*>* envp = (std::vector<const char*>*) context;
+			std::string keyString, valueString;
+			if (cfStringToUTF8((CFStringRef) key, keyString) && cfStringToUTF8((CFStringRef) value, valueString))
+				((std::vector<std::string>*) context)->push_back(keyString + "=" + valueString);
+		}, &envStrings);
 
-					if (CFGetTypeID(skey) == CFStringGetTypeID() && CFGetTypeID(svalue) == CFStringGetTypeID())
-					{
-						char* str = new char[CFStringGetLength(skey) + CFStringGetLength(svalue) + 1];
-
-						strcpy(str, CFStringGetCStringPtr(skey, kCFStringEncodingUTF8));
-						strcat(str, "=");
-						strcat(str, CFStringGetCStringPtr(svalue, kCFStringEncodingUTF8));
-
-						envp->push_back(str);
-					}
-				}, envp.get());
+		envp.reset(new std::vector<char*>);
+		envp->reserve(envStrings.size() + 1);
+		for (std::string& item : envStrings)
+			envp->push_back((char*) item.c_str());
+		envp->push_back(nullptr);
 	}
 
 	// https://stackoverflow.com/questions/1584956/how-to-handle-execvp-errors-after-fork
 	
 	if (pipe(pipefds))
-	{
-		if (envp)
-			std::for_each(envp->begin(), envp->end(), [](char* p) { delete [] p; });
-
 		return makeOSStatus(errno);
-	}
 
 	fcntl(pipefds[1], F_SETFD, fcntl(pipefds[1], F_GETFD) | FD_CLOEXEC);
 
@@ -189,6 +228,8 @@ OSStatus LSOpenApplication(const LSApplicationParameters *appParams, ProcessSeri
 	{
 		case -1:
 			rv = makeOSStatus(errno);
+			close(pipefds[0]);
+			close(pipefds[1]);
 			break;
 		case 0:
 			close(pipefds[0]);
@@ -201,9 +242,9 @@ OSStatus LSOpenApplication(const LSApplicationParameters *appParams, ProcessSeri
 			int err, count;
 			close(pipefds[1]);
 
-			while ((count = read(pipefds[0], &err, sizeof(errno))) == -1)
+			while ((count = read(pipefds[0], &err, sizeof(err))) == -1)
 			{
-				if (errno != EAGAIN && errno != EINTR)
+				if (errno != EINTR)
 					break;
 			}
 
@@ -213,9 +254,6 @@ OSStatus LSOpenApplication(const LSApplicationParameters *appParams, ProcessSeri
 		}
 	}
 	
-	if (envp)
-		std::for_each(envp->begin(), envp->end(), [](char* p) { delete [] p; });
-
 	return rv;
 }
 

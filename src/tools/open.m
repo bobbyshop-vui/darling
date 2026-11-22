@@ -150,7 +150,13 @@ int main(int argc, char *argv[])
 		NSURL** urls = (NSURL**) malloc(count * sizeof(NSURL*));
 
 		for (int i = 0; i < count; i++)
-			urls[i] = [NSURL URLWithString:[NSString stringWithCString: argv[optind+i] encoding: NSUTF8StringEncoding]];
+		{
+			NSString* input = [NSString stringWithCString: argv[optind+i] encoding: NSUTF8StringEncoding];
+			NSURL* url = [NSURL URLWithString:input];
+			if (url == nil || [url scheme] == nil)
+				url = [NSURL fileURLWithPath:input];
+			urls[i] = url;
+		}
 		
 		filenames = [NSArray arrayWithObjects: urls count: count];
 		free(urls);

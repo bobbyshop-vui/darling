@@ -20,7 +20,52 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <LaunchServices/LaunchServices.h>
 #include <CarbonCore/MacErrors.h>
+#include <CoreFoundation/CFBundle.h>
 #include <stdio.h>
+#include <string.h>
+#include <limits.h>
+
+OSStatus LSOpenApplication(const LSApplicationParameters *appParams, ProcessSerialNumber *outPSN);
+
+static OSStatus openApplicationURL(CFURLRef url, const LSApplicationParameters *appParams)
+{
+	if (!url || CFGetTypeID(url) != CFURLGetTypeID())
+		return paramErr;
+
+	CFStringRef scheme = CFURLCopyScheme(url);
+	Boolean isFileURL = scheme && CFStringCompare(scheme, CFSTR("file"), kCFCompareCaseInsensitive) == kCFCompareEqualTo;
+	if (scheme)
+		CFRelease(scheme);
+	if (!isFileURL)
+		return paramErr;
+
+	CFBundleRef bundle = CFBundleCreate(kCFAllocatorDefault, url);
+	if (!bundle)
+		return kLSApplicationNotFoundErr;
+
+	CFURLRef executableURL = CFBundleCopyExecutableURL(bundle);
+	CFRelease(bundle);
+	if (!executableURL)
+		return kLSApplicationNotFoundErr;
+	CFRelease(executableURL);
+
+	char path[PATH_MAX];
+	if (!CFURLGetFileSystemRepresentation(url, true, (UInt8*) path, sizeof(path)))
+		return paramErr;
+
+	FSRef appRef;
+	OSStatus status = FSPathMakeRef((const UInt8*) path, &appRef, NULL);
+	if (status != noErr)
+		return status;
+
+	LSApplicationParameters params;
+	memset(&params, 0, sizeof(params));
+	if (appParams)
+		params = *appParams;
+	params.application = &appRef;
+
+	return LSOpenApplication(&params, NULL);
+}
 
 OSStatus
 LSOpenURLsWithRole(
@@ -31,8 +76,29 @@ LSOpenURLsWithRole(
   ProcessSerialNumber * outPSNs,
   CFIndex inMaxPSNCount)
 {
-	puts("LSOpenURLsWithRole STUB");
-	return unimpErr;
+	if (inAppParams && inAppParams->application)
+		return LSOpenApplication(inAppParams, outPSNs);
+
+	if (!inURLs || CFGetTypeID(inURLs) != CFArrayGetTypeID())
+		return paramErr;
+
+	CFIndex count = CFArrayGetCount(inURLs);
+	if (count == 0)
+		return paramErr;
+
+	OSStatus status = noErr;
+	for (CFIndex i = 0; i < count; i++)
+	{
+		CFTypeRef value = (CFTypeRef) CFArrayGetValueAtIndex(inURLs, i);
+		if (!value || CFGetTypeID(value) != CFURLGetTypeID())
+			return paramErr;
+
+		status = openApplicationURL((CFURLRef) value, inAppParams);
+		if (status != noErr)
+			return status;
+	}
+
+	return noErr;
 }
 
 OSStatus
