@@ -55,13 +55,14 @@ typedef struct FSSpec FSSpec;
 
 typedef struct FSSpec* FSSpecPtr;
 
+#pragma pack(push, 2)
 struct FSPermissionInfo
 {
 	uint32_t userID, groupID; // uid, gid
 	uint8_t reserved1;
 	uint8_t userAccess; // mode for the current user
 	uint16_t mode; // mode
-	uint32_t reserved2;
+	void* fileSec;
 };
 
 struct FSCatalogInfo
@@ -95,6 +96,7 @@ struct FSCatalogInfo
 	uint32_t valence; // file count within a directory
 	uint32_t textEncodingHint;
 };
+#pragma pack(pop)
 typedef struct FSCatalogInfo FSCatalogInfo;
 
 typedef void* IOCompletionUPP;
@@ -224,6 +226,7 @@ OSStatus FSFindFolder(long vRefNum, OSType folderType, Boolean createFolder, str
 OSStatus FSDeleteObject(const FSRef* fsref);
 
 OSStatus FSGetCatalogInfo(const FSRefPtr ref, uint32_t infoBits, struct FSCatalogInfo* infoOut, struct HFSUniStr255* nameOut, FSSpecPtr fsspec, FSRefPtr parentDir);
+OSErr FSSetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap whichInfo, const FSCatalogInfo* catalogInfo);
 
 OSErr PBCreateDirectoryUnicodeSync(struct FSRefParam* paramBlock);
 OSErr PBCreateFileUnicodeSync(struct FSRefParam* paramBlock);

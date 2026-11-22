@@ -18,11 +18,15 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <CoreServices/FileManager.h>
+#include "MacFileAttributes.h"
+#include <array>
+#include <cstddef>
 #include <cstdlib>
 #include <string>
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/xattr.h>
 #include <unistd.h>
 #include <algorithm>
 #include <memory>
@@ -41,6 +45,51 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 #include <darling/emulation/linux_premigration/ext/file_handle.h>
 
 #define STUB() printf("STUB %s\n", __PRETTY_FUNCTION__);
+
+// Match the layout used by clients built with Apple's CarbonCore headers.
+static_assert(offsetof(FSCatalogInfo, rsrcLogicalSize) == (sizeof(void*) == 8 ? 124 : 120));
+static_assert(sizeof(FSCatalogInfo) == (sizeof(void*) == 8 ? 148 : 144));
+
+namespace {
+
+constexpr FSCatalogInfoBitmap finderInfoBits = kFSCatInfoFinderInfo | kFSCatInfoFinderXInfo;
+using FinderInfo = std::array<uint8_t, 32>;
+
+int readFinderInfo(int fd, FinderInfo& info)
+{
+	ssize_t size = fgetxattr(fd, Darling::finderInfoAttribute, info.data(), info.size(), 0, 0);
+	if (size >= 0 || Darling::fileAttributeMissing(errno) || errno == ENOTSUP)
+		return 0;
+	return errno;
+}
+
+OSStatus getCatalogForkInfo(const char* path, FSCatalogInfoBitmap flags, FSCatalogInfo* info)
+{
+	int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (fd < 0)
+		return makeOSStatus(errno);
+
+	int error = 0;
+	if (flags & finderInfoBits) {
+		FinderInfo finder{};
+		error = readFinderInfo(fd, finder);
+		if (!error && (flags & kFSCatInfoFinderInfo))
+			std::memcpy(info->finderInfo, finder.data(), sizeof(info->finderInfo));
+		if (!error && (flags & kFSCatInfoFinderXInfo))
+			std::memcpy(info->extFinderInfo, finder.data() + sizeof(info->finderInfo), sizeof(info->extFinderInfo));
+	}
+	if (!error && (flags & kFSCatInfoRsrcSizes)) {
+		ssize_t size = fgetxattr(fd, Darling::resourceForkAttribute, nullptr, 0, 0, 0);
+		if (size >= 0)
+			info->rsrcLogicalSize = info->rsrcPhysicalSize = size;
+		else if (!Darling::fileAttributeMissing(errno) && errno != ENOTSUP)
+			error = errno;
+	}
+	close(fd);
+	return error ? makeOSStatus(error) : noErr;
+}
+
+}
 
 // Is the current user member of the specified group?
 static bool hasgid(gid_t gid);
@@ -155,6 +204,8 @@ OSStatus FSGetCatalogInfo(const FSRef* ref, uint32_t infoBits, FSCatalogInfo* in
 {
 	std::string path;
 
+	if (!ref)
+		return paramErr;
 	if (!FSRefMakePath(ref, path))
 		return fnfErr;
 
@@ -250,9 +301,48 @@ OSStatus FSGetCatalogInfo(const FSRef* ref, uint32_t infoBits, FSCatalogInfo* in
 			infoOut->attributeModDate = infoOut->contentModDate = Darling::time_tToUTC(st.st_mtime);
 		if (infoBits & kFSCatInfoAccessDate)
 			infoOut->accessDate = Darling::time_tToUTC(st.st_atime);
+		if (infoBits & (finderInfoBits | kFSCatInfoRsrcSizes))
+			return getCatalogForkInfo(path.c_str(), infoBits, infoOut);
 	}
 
 	return noErr;
+}
+
+OSErr FSSetCatalogInfo(const FSRef* ref, FSCatalogInfoBitmap whichInfo, const FSCatalogInfo* catalogInfo)
+{
+	if (!ref || (whichInfo && !catalogInfo))
+		return paramErr;
+	if (whichInfo & ~finderInfoBits)
+		return unimpErr;
+	if (!whichInfo)
+		return noErr;
+
+	std::string path;
+	if (!FSRefMakePath(ref, path))
+		return fnfErr;
+	int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (fd < 0)
+		return errno == EACCES || errno == EPERM ? permErr : ioErr;
+
+	FinderInfo current{};
+	int error = readFinderInfo(fd, current);
+	if (!error) {
+		FinderInfo updated = current;
+		if (whichInfo & kFSCatInfoFinderInfo)
+			std::memcpy(updated.data(), catalogInfo->finderInfo, sizeof(catalogInfo->finderInfo));
+		if (whichInfo & kFSCatInfoFinderXInfo)
+			std::memcpy(updated.data() + sizeof(catalogInfo->finderInfo), catalogInfo->extFinderInfo, sizeof(catalogInfo->extFinderInfo));
+		if (updated != current && fsetxattr(fd, Darling::finderInfoAttribute, updated.data(), updated.size(), 0, 0) != 0)
+			error = errno;
+	}
+	close(fd);
+	if (error == EACCES || error == EPERM)
+		return permErr;
+	if (error == EROFS)
+		return wPrErr;
+	if (error == ENOTSUP)
+		return unimpErr;
+	return error ? ioErr : noErr;
 }
 
 bool hasgid(gid_t gid)

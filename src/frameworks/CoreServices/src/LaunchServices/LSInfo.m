@@ -20,6 +20,7 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <LaunchServices/LaunchServices.h>
 #include <CarbonCore/MacErrors.h>
+#include <CoreFoundation/CFPreferences.h>
 #include <stdio.h>
 #include <sqlite3.h>
 #import <Foundation/NSString.h>
@@ -292,7 +293,7 @@ CFURLRef LSCopyDefaultApplicationURLForURL(CFURLRef inURL, LSRolesMask inRoleMas
 
 	if (status != noErr)
 	{
-		if (*outError)
+		if (outError)
 			*outError = CFErrorCreate(NULL, kCFErrorDomainOSStatus, status, NULL);
 		return NULL;
 	}
@@ -306,15 +307,78 @@ CFURLRef LSCopyDefaultApplicationURLForURL(CFURLRef inURL, LSRolesMask inRoleMas
 
 OSStatus LSGetApplicationForURL(CFURLRef inURL, LSRolesMask inRoleMask, FSRef *outAppRef, CFURLRef *outAppURL)
 {
+	if (outAppURL)
+		*outAppURL = NULL;
+	if (!inURL)
+		return paramErr;
+	if (![(NSURL*) inURL isFileURL])
+	{
+		CFStringRef scheme = CFURLCopyScheme(inURL);
+		if (!scheme)
+			return paramErr;
+		CFStringRef handler = LSCopyDefaultHandlerForURLScheme(scheme);
+		CFRelease(scheme);
+		if (!handler)
+			return kLSApplicationNotFoundErr;
+		OSStatus status = LSFindApplicationForInfo(kLSUnknownCreator, handler, NULL, outAppRef, outAppURL);
+		CFRelease(handler);
+		return status;
+	}
+
 	NSString* extension = [(NSURL*) inURL pathExtension];
 	return LSGetApplicationForInfo(kLSUnknownType, kLSUnknownCreator, (CFStringRef) extension, inRoleMask, outAppRef, outAppURL);
 }
 
+static const CFStringRef urlHandlerPreferences = CFSTR("org.darling.launchservices.url-handlers");
+
+static NSString* normalizedURLScheme(CFStringRef scheme)
+{
+	if (!scheme || CFGetTypeID(scheme) != CFStringGetTypeID())
+		return nil;
+	CFIndex length = CFStringGetLength(scheme);
+	if (length == 0)
+		return nil;
+
+	for (CFIndex i = 0; i < length; ++i)
+	{
+		UniChar c = CFStringGetCharacterAtIndex(scheme, i);
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+			continue;
+		if (i != 0 && ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.'))
+			continue;
+		return nil;
+	}
+	return [(NSString*) scheme lowercaseString];
+}
+
 CFArrayRef LSCopyAllHandlersForURLScheme(CFStringRef inURLScheme)
 {
-	puts("LSCopyAllHandlersForURLScheme STUB");
-	// NULL is a safe assumption to fall back on in the stub, since it means none were found.
-	return NULL;
+	NSString* scheme = normalizedURLScheme(inURLScheme);
+	if (!scheme)
+		return NULL;
+	FMDatabaseQueue* dq = getDatabaseQueue();
+	if (!dq)
+		return NULL;
+
+	NSMutableArray* handlers = [[NSMutableArray alloc] init];
+	[dq inDatabase:^(FMDatabase* db) {
+		FMResultSet* rs = [db executeQuery:@"SELECT DISTINCT b.bundle_id FROM bundle b "
+				"JOIN bundle_url_type t ON t.bundle=b.id "
+				"JOIN bundle_url_type_scheme s ON s.type=t.id "
+				"WHERE b.package_type='APPL' AND b.bundle_id <> '' AND s.scheme=? "
+				"ORDER BY b.bundle_id COLLATE NOCASE", scheme];
+		while ([rs next])
+			[handlers addObject:[rs stringForColumnIndex:0]];
+		[rs close];
+	}];
+	if ([handlers count] == 0)
+	{
+		[handlers release];
+		return NULL;
+	}
+	CFArrayRef result = (CFArrayRef) [handlers copy];
+	[handlers release];
+	return result;
 }
 
 CFArrayRef LSCopyAllRoleHandlersForContentType(CFStringRef inContentType, LSRolesMask inRole)
@@ -326,6 +390,34 @@ CFArrayRef LSCopyAllRoleHandlersForContentType(CFStringRef inContentType, LSRole
 
 CFStringRef LSCopyDefaultHandlerForURLScheme(CFStringRef inURLScheme)
 {
-	puts("LSCopyDefaultHandlerForURLScheme STUB");
-	return NULL; // (could also return "" I guess)
+	NSString* scheme = normalizedURLScheme(inURLScheme);
+	if (!scheme)
+		return NULL;
+	CFPropertyListRef value = CFPreferencesCopyValue((CFStringRef) scheme, urlHandlerPreferences,
+			kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	if (value)
+	{
+		if (CFGetTypeID(value) == CFStringGetTypeID() && CFStringGetLength((CFStringRef) value) != 0)
+			return (CFStringRef) value;
+		CFRelease(value);
+	}
+
+	CFArrayRef handlers = LSCopyAllHandlersForURLScheme(inURLScheme);
+	if (!handlers)
+		return NULL;
+	CFStringRef first = (CFStringRef) CFRetain(CFArrayGetValueAtIndex(handlers, 0));
+	CFRelease(handlers);
+	return first;
+}
+
+OSStatus LSSetDefaultHandlerForURLScheme(CFStringRef inURLScheme, CFStringRef inHandlerBundleID)
+{
+	NSString* scheme = normalizedURLScheme(inURLScheme);
+	if (!scheme || !inHandlerBundleID || CFGetTypeID(inHandlerBundleID) != CFStringGetTypeID() ||
+			CFStringGetLength(inHandlerBundleID) == 0)
+		return paramErr;
+	CFPreferencesSetValue((CFStringRef) scheme, inHandlerBundleID, urlHandlerPreferences,
+			kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	return CFPreferencesSynchronize(urlHandlerPreferences, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+		? noErr : kLSUnknownErr;
 }

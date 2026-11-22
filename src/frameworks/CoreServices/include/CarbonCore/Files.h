@@ -38,7 +38,19 @@ enum {
 	fsRdPerm = 1,
 	fsWrPerm = 2,
 	fsRdWrPerm = 3,
-	dsRdWrShPerm = 4,
+	fsRdWrShPerm = 4,
+	dsRdWrShPerm = fsRdWrShPerm,
+};
+
+enum {
+	fsAtMark = 0,
+	fsFromStart = 1,
+	fsFromLEOF = 2,
+	fsFromMark = 3,
+	kFSAllowConcurrentAsyncIOMask = 0x0008,
+	kFSPleaseCacheMask = 0x0010,
+	kFSNoCacheMask = 0x0020,
+	kFSRdVerifyMask = 0x0040,
 };
 
 typedef SInt16 FSVolumeRefNum;
@@ -70,6 +82,10 @@ typedef struct FSVolumeInfo {
 
 OSErr FSGetDataForkName(HFSUniStr255* dataForkName);
 OSErr FSGetResourceForkName(HFSUniStr255* rsrcForkName);
+OSErr FSOpenFork(const FSRef* ref, UniCharCount forkNameLength, const UniChar* forkName, SInt8 permissions, FSIORefNum* forkRefNum);
+OSErr FSReadFork(FSIORefNum forkRefNum, UInt16 positionMode, SInt64 offset, ByteCount requestCount, void* buffer, ByteCount* actualCount);
+OSErr FSWriteFork(FSIORefNum forkRefNum, UInt16 positionMode, SInt64 offset, ByteCount requestCount, const void* buffer, ByteCount* actualCount);
+OSErr FSCloseFork(FSIORefNum forkRefNum);
 
 OSErr FSGetVolumeInfo(FSVolumeRefNum volume, ItemCount volumeIndex, FSVolumeRefNum *actualVolume, FSVolumeInfoBitmap whichInfo, FSVolumeInfo *info, HFSUniStr255 *volumeName, FSRef *rootDirectory);
 
