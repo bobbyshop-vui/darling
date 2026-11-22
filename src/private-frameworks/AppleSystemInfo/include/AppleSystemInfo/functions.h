@@ -29,7 +29,6 @@ void* ASI_CopyCurrentRAMDescription(void);
 void* ASI_CopyCurrentRAMDescriptionWithType(void);
 void* ASI_CopyDiskSizeDescription(void);
 void* ASI_CopyFormattedSerialNumber(void);
-void* ASI_CopyHostUUID(void);
 void* ASI_CopyMachineConfigurationCode(void);
 void* ASI_CopyRAMDescription(void);
 void* ASI_IsPlatformFeatureEnabled(void);

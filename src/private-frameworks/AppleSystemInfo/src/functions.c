@@ -36,7 +36,6 @@ void* ASI_CopyCurrentRAMDescription(void) { if (verbose) puts("STUB: ASI_CopyCur
 void* ASI_CopyCurrentRAMDescriptionWithType(void) { if (verbose) puts("STUB: ASI_CopyCurrentRAMDescriptionWithType called"); return NULL; }
 void* ASI_CopyDiskSizeDescription(void) { if (verbose) puts("STUB: ASI_CopyDiskSizeDescription called"); return NULL; }
 void* ASI_CopyFormattedSerialNumber(void) { if (verbose) puts("STUB: ASI_CopyFormattedSerialNumber called"); return NULL; }
-void* ASI_CopyHostUUID(void) { if (verbose) puts("STUB: ASI_CopyHostUUID called"); return NULL; }
 void* ASI_CopyMachineConfigurationCode(void) { if (verbose) puts("STUB: ASI_CopyMachineConfigurationCode called"); return NULL; }
 void* ASI_CopyRAMDescription(void) { if (verbose) puts("STUB: ASI_CopyRAMDescription called"); return NULL; }
 void* ASI_IsPlatformFeatureEnabled(void) { if (verbose) puts("STUB: ASI_IsPlatformFeatureEnabled called"); return NULL; }
