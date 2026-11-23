@@ -294,6 +294,7 @@ set(_xcode_fix_dirs
 	src/external/cocotron/CoreText
 	src/external/cocotron/CoreGraphics
 	src/external/cocotron/CoreData
+	src/external/cocotron/Onyx2D
 	src/external/foundation
 	src/external/metal
 	src/external/libtrace
