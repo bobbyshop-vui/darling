@@ -137,6 +137,22 @@ option(DEBIAN_PACKAGING "Packaging for Debian" OFF)
 option(ENABLE_TESTS "Install in-prefix unit tests" OFF)
 option(REGENERATE_SDK "Regenerate Header Files For Open Source SDK" OFF)
 
+# Adds the `check-xcode-binds` target, which walks the non-lazy dyld bind tables
+# of an installed Xcode and verifies that every symbol it binds against is
+# actually exported by the corresponding framework/system library in the prefix.
+#
+# This is the check for the "Xcode aborts with `Symbol not found: _FOO`" class
+# of bug: those bindings are resolved eagerly, so a missing class or constant
+# makes the whole image fail to load.  It is opt-in because it needs an Xcode
+# inside the Darling root and takes a few minutes (271 binaries per run).
+option(DARLING_XCODE_BIND_CHECK
+	"Add a `check-xcode-binds` target that verifies Xcode's non-lazy dyld binds" OFF)
+
+# Optional explicit path; when empty, tools/check-xcode-binds.py auto-detects
+# it (Darling root = $DARLING_ROOT, else ~/.darling).
+set(DARLING_XCODE_APP "" CACHE FILEPATH
+	"Xcode.app analysed by check-xcode-binds (auto-detected when empty)")
+
 if (DEBIAN_PACKAGING)
 	set(COMPONENTS_DEFAULT "all")
 else()
@@ -238,6 +254,96 @@ install(DIRECTORY DESTINATION libexec/darling/Library/Preferences)
 if(NOT DEBIAN_PACKAGING)
 	install(CODE "execute_process(COMMAND bash ${DARLING_TOP_DIRECTORY}/tools/shutdown-user.sh)")
 endif(NOT DEBIAN_PACKAGING)
+
+if (DARLING_XCODE_BIND_CHECK)
+	find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+	set(_bind_check_args --prefix ${CMAKE_INSTALL_PREFIX}/libexec/darling)
+	if (DARLING_XCODE_APP)
+		list(APPEND _bind_check_args --xcode ${DARLING_XCODE_APP})
+	endif()
+
+	add_custom_target(check-xcode-binds
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/tools/check-xcode-binds.py
+			${_bind_check_args}
+		USES_TERMINAL
+		COMMENT "Checking non-lazy dyld binds used by Xcode"
+		VERBATIM)
+endif()
+
+# ---------------------------------------------------------------------------
+# install-xcode-fixes
+#
+# The full `install` target depends on `all`, so it rebuilds the entire tree
+# before installing anything.  While iterating on Xcode compatibility that is
+# prohibitively slow, so this target installs *only* the subdirectories that
+# carry Xcode-related patches, using the very same generated install scripts
+# (`cmake --install <subdir>` is what `make install/fast` does) and without any
+# build dependency.
+#
+# Run it as root, since it writes into the prefix:
+#
+#     sudo make -C build install-xcode-fixes
+#
+# When DARLING_XCODE_BIND_CHECK is enabled it also runs the bind check at the
+# end, so a single command installs and verifies.
+# ---------------------------------------------------------------------------
+set(_xcode_fix_dirs
+	src/external/cocotron/AppKit
+	src/external/cocotron/CoreText
+	src/external/cocotron/CoreGraphics
+	src/external/cocotron/CoreData
+	src/external/foundation
+	src/external/metal
+	src/external/libtrace
+	src/external/libc
+	src/frameworks/WebKit
+	src/frameworks/ModelIO
+	src/frameworks/SecurityFoundation
+	src/frameworks/CoreImage
+	src/frameworks/AVFoundation
+	src/frameworks/Accelerate
+	src/frameworks/CoreVideo
+	src/frameworks/OpenGL
+	src/frameworks/GLKit
+	src/private-frameworks/SystemAdministration
+	src/private-frameworks/MetalTools
+	src/private-frameworks/PackageKit
+	src/private-frameworks/PlugInKit
+)
+
+# Resolve the Xcode path at *configure* time: the install target is typically run
+# through sudo, where HOME points at /root and auto-detection inside the script
+# would look in the wrong place.
+if (DARLING_XCODE_BIND_CHECK AND NOT DARLING_XCODE_APP)
+	if (EXISTS "$ENV{HOME}/.darling/Applications/Xcode.app")
+		set(DARLING_XCODE_APP "$ENV{HOME}/.darling/Applications/Xcode.app")
+	elseif (EXISTS "${CMAKE_INSTALL_PREFIX}/libexec/darling/Applications/Xcode.app")
+		set(DARLING_XCODE_APP "${CMAKE_INSTALL_PREFIX}/libexec/darling/Applications/Xcode.app")
+	endif()
+	if (DARLING_XCODE_APP)
+		message(STATUS "check-xcode-binds: using Xcode at ${DARLING_XCODE_APP}")
+	endif()
+endif()
+
+set(_xcode_fix_cmds)
+foreach(_dir ${_xcode_fix_dirs})
+	list(APPEND _xcode_fix_cmds
+		COMMAND ${CMAKE_COMMAND} --install "${CMAKE_BINARY_DIR}/${_dir}")
+endforeach()
+
+if (DARLING_XCODE_BIND_CHECK)
+	list(APPEND _xcode_fix_cmds
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/tools/check-xcode-binds.py
+			${_bind_check_args})
+endif()
+
+add_custom_target(install-xcode-fixes
+	${_xcode_fix_cmds}
+	USES_TERMINAL
+	COMMENT "Installing only the frameworks patched for Xcode (no rebuild)")
 
 add_custom_target(uninstall
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/uninstall

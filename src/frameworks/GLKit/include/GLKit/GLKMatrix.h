@@ -22,3 +22,9 @@
 // TODO
 typedef int GLKMatrix3;
 typedef int GLKMatrix4;
+
+// Kept as the real 4x float layout: Xcode's GPUDebuggerMTLSupport binds
+// GLKQuaternionIdentity as a data symbol and reads a full GLKQuaternion.
+typedef struct { float x, y, z, w; } GLKQuaternion;
+
+extern const GLKQuaternion GLKQuaternionIdentity;

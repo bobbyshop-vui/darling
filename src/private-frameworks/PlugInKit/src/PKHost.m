@@ -21,6 +21,36 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 @implementation PKHost
 
+/*
+ * Xcode's first launch messages the shared host
+ * (DVTFirstLaunchPackageInstallationHelper -> +[PKHost defaultHost]).
+ * Returning a live singleton lets the caller proceed; everything it then sends
+ * lands in the stub forwarding below instead of raising
+ * "+[PKHost defaultHost]: unrecognized selector".
+ */
++ (instancetype)defaultHost {
+    static PKHost *host = nil;
+
+    if (host == nil) {
+        host = [[self alloc] init];
+    }
+    return host;
+}
+
+/*
+ * Xcode's plug-in machinery calls this.  The generic forwarding stub below
+ * answers *every* selector with the "v@:" signature (self + _cmd), so a
+ * 5-argument selector made NSInvocation raise
+ *
+ *     NSForwardSignatureError: invoked with 5 args, but 2 expected
+ *
+ * Give it an explicit implementation instead.
+ */
+- (void) continuouslyDiscoverPlugInsForAttributes: (id) attributes
+                                            flags: (NSUInteger) flags
+                                            found: (id) foundHandler {
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }

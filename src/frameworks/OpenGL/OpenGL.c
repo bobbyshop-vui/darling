@@ -428,3 +428,13 @@ CGLError CGLQueryRendererInfo(unsigned long display_mask, CGLRendererInfoObj *re
 CGLError CGLDestroyRendererInfo(CGLRendererInfoObj rend) {
     return kCGLNoError;
 }
+
+void CGLEnable(CGLContextObj ctx, CGLContextParameter param) {
+    (void) ctx;
+    (void) param;
+}
+
+void CGLDisable(CGLContextObj ctx, CGLContextParameter param) {
+    (void) ctx;
+    (void) param;
+}

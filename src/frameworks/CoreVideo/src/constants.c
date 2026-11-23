@@ -44,6 +44,7 @@ const CFStringRef kCVImageBufferTransferFunction_SMPTE_ST_428_1 = CFSTR("SMPTE_S
 const CFStringRef kCVImageBufferTransferFunction_SMPTE_C = CFSTR("SMPTE_C");
 
 const CFStringRef kCVPixelBufferIOSurfacePropertiesKey = CFSTR("IOSurfaceProperties");
+const CFStringRef kCVPixelBufferCGImageCompatibilityKey = CFSTR("CGImageCompatibility");
 const CFStringRef kCVPixelBufferOpenGLCompatibilityKey = CFSTR("OpenGLCompatibility");
 const CFStringRef kCVPixelBufferPixelFormatTypeKey = CFSTR("PixelFormatType");
 const CFStringRef kCVPixelBufferMetalCompatibilityKey = CFSTR("MetalCompatibility");

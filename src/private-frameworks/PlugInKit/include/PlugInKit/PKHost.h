@@ -19,4 +19,6 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 @interface PKHost : NSObject
 
++ (instancetype) defaultHost;
+
 @end

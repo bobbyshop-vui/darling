@@ -19,6 +19,7 @@ add_framework(ModelIO
 
     SOURCES
         src/ModelIO.m
+        src/ModelIOConstants.m
         src/MDLTextureFilter.m
         src/MDLTextureSampler.m
         src/MDLMaterialProperty.m

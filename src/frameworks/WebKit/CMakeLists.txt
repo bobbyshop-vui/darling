@@ -19,6 +19,7 @@ add_framework(WebKit
 
     SOURCES
         src/WebKit.m
+        src/WebKitConstants.m
         src/_WKActivatedElementInfo.m
         src/_WKApplicationManifest.m
         src/_WKAttachmentDisplayOptions.m
@@ -47,12 +48,16 @@ add_framework(WebKit
         src/_WKWebsiteDataStore.m
         src/_WKWebsiteDataStoreConfiguration.m
         src/_WKWebsitePolicies.m
+        src/DOMCSSStyleRule.m
+        src/DOMCSSStyleSheet.m
         src/DOMElement.m
+        src/DOMHTMLBodyElement.m
         src/DOMNode.m
         src/DOMObject.m
         src/WebView.m
         src/WebDownload.m
         src/WebHistory.m
+        src/WebHistoryItem.m
         src/WebPolicyDelegate.m
         src/WebScriptObject.m
         src/WKCustomProtocolLoader.m

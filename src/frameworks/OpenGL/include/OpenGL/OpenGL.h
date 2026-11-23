@@ -30,6 +30,8 @@ CGL_EXPORT CGLContextObj CGLGetCurrentContext(void);
 
 CGL_EXPORT CGLError CGLSetParameter(CGLContextObj context, CGLContextParameter parameter, const GLint *value);
 CGL_EXPORT CGLError CGLGetParameter(CGLContextObj context, CGLContextParameter parameter, GLint *value);
+CGL_EXPORT void CGLEnable(CGLContextObj ctx, CGLContextParameter param);
+CGL_EXPORT void CGLDisable(CGLContextObj ctx, CGLContextParameter param);
 CGL_EXPORT CGLError CGLFlushDrawable(CGLContextObj context);
 
 CGL_EXPORT CGLError CGLChoosePixelFormat(const CGLPixelFormatAttribute *attributes, CGLPixelFormatObj *pixelFormatp, GLint *numberOfScreensp);
