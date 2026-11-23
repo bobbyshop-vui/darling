@@ -18,8 +18,42 @@
 */
 
 #import <UIFoundation/NSFontAssetRequest.h>
+#import <Foundation/NSMutableDictionary.h>
+#import <Foundation/NSProgress.h>
+#import <Foundation/NSValue.h>
+
+static NSMutableDictionary *NSFontAssetRequestProgresses;
 
 @implementation NSFontAssetRequest
+
+- (NSProgress *)progress
+{
+    @synchronized ([NSFontAssetRequest class]) {
+        if (NSFontAssetRequestProgresses == nil) {
+            NSFontAssetRequestProgresses = [[NSMutableDictionary alloc] init];
+        }
+
+        NSValue *key = [NSValue valueWithPointer: self];
+        NSProgress *progress = [NSFontAssetRequestProgresses objectForKey: key];
+        if (progress == nil) {
+            progress = [[NSProgress alloc] initWithParent: nil userInfo: nil];
+            [progress setTotalUnitCount: -1];
+            [NSFontAssetRequestProgresses setObject: progress forKey: key];
+            [progress release];
+            progress = [NSFontAssetRequestProgresses objectForKey: key];
+        }
+        return progress;
+    }
+}
+
+- (void)dealloc
+{
+    @synchronized ([NSFontAssetRequest class]) {
+        NSValue *key = [NSValue valueWithPointer: self];
+        [NSFontAssetRequestProgresses removeObjectForKey: key];
+    }
+    [super dealloc];
+}
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector
 {
