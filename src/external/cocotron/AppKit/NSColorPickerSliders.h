@@ -1,1 +1,0 @@
-NSColorPicker.subproj/NSColorPickerSliders.h

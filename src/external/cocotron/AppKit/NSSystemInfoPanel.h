@@ -1,1 +1,0 @@
-NSSystemInfoPanel/NSSystemInfoPanel.h

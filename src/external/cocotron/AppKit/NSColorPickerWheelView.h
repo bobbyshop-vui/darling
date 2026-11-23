@@ -1,1 +1,0 @@
-NSColorPicker.subproj/NSColorPickerWheelView.h

@@ -1,5 +1,0 @@
-CF_IMPLICIT_BRIDGING_ENABLED
-
-typedef struct __CTTypesetter* CTTypesetterRef;
-
-CF_IMPLICIT_BRIDGING_DISABLED

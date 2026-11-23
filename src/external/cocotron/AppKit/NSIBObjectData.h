@@ -1,1 +1,0 @@
-nib.subproj/NSIBObjectData.h

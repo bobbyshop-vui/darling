@@ -442,3 +442,15 @@
 [submodule "src/external/metal"]
 	path = src/external/metal
 	url = ../darling-metal.git
+[submodule "src/external/foundation"]
+	path = src/external/foundation
+	url = ../darling-foundation.git
+[submodule "src/external/cocotron"]
+	path = src/external/cocotron
+	url = ../darling-cocotron.git
+[submodule "src/external/xnu"]
+	path = src/external/xnu
+	url = ../darling-xnu.git
+[submodule "src/external/darlingserver"]
+	path = src/external/darlingserver
+	url = ../darlingserver.git
