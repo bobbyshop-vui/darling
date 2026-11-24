@@ -21,6 +21,12 @@
 
 @implementation CIImage
 
+- (void)drawAtPoint:(NSPoint)point fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta {
+}
+
+- (void)drawInRect:(NSRect)dstRect fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta {
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }

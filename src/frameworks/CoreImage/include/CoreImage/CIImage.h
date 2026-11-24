@@ -21,4 +21,8 @@
 
 @interface CIImage : NSObject
 
+// AppKit NSCIImageRep additions. There is no CI rendering backend yet, so these draw nothing.
+- (void)drawAtPoint:(NSPoint)point fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta;
+- (void)drawInRect:(NSRect)dstRect fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta;
+
 @end

@@ -19,6 +19,14 @@
 
 #include <Foundation/Foundation.h>
 
-@interface CIColor : NSObject
+@interface CIColor : NSObject {
+    CGFloat _components[4];
+}
+
+- (instancetype)initWithColor:(id)color;
+- (CGFloat)red;
+- (CGFloat)green;
+- (CGFloat)blue;
+- (CGFloat)alpha;
 
 @end
