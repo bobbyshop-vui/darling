@@ -19,6 +19,7 @@ add_framework(ServiceManagement
 
 	SOURCES
 	  ServiceManagement.c
+	  XcodeLazySymbols.c
 
 	DEPENDENCIES
 		system

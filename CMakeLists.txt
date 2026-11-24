@@ -297,6 +297,10 @@ set(_xcode_fix_dirs
 	src/external/cocotron/Onyx2D
 	src/external/cocotron/QuartzCore
 	src/external/foundation
+	src/external/corefoundation
+	src/external/libsystem
+	src/external/configd
+	src/external/cfnetwork/src
 	src/external/metal
 	src/external/libtrace
 	src/external/libc
@@ -307,6 +311,11 @@ set(_xcode_fix_dirs
 	src/frameworks/AVFoundation
 	src/frameworks/Accelerate
 	src/frameworks/CoreVideo
+	src/frameworks/CoreServices
+	src/frameworks/ImageIO
+	src/frameworks/Carbon
+	src/frameworks/ServiceManagement
+	src/frameworks/AddressBook
 	src/frameworks/OpenGL
 	src/frameworks/GLKit
 	src/frameworks/JavaScriptCore

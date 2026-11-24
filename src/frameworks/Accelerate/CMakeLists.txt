@@ -21,6 +21,7 @@ add_framework(Accelerate
 
     SOURCES
         src/Accelerate.c
+        src/XcodeLazySymbols.c
         src/constants.c
 
     DEPENDENCIES

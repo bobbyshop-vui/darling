@@ -25,7 +25,7 @@
 typedef UInt32 ThemeDrawState;
 typedef UInt32 ThemeBackgroundKind;
 
-enum ThemeBrush : SInt16 {
+typedef enum ThemeBrush : SInt16 {
    kThemeBrushDialogBackgroundActive = 1,
    kThemeBrushDialogBackgroundInactive = 2,
    kThemeBrushAlertBackgroundActive = 3,
@@ -92,7 +92,7 @@ enum ThemeBrush : SInt16 {
    kThemeBrushAlternatePrimaryHighlightColor = -5
 } ThemeBrush;
 
-enum ThemeButtonKind : UInt16 {
+typedef enum ThemeButtonKind : UInt16 {
    kThemePushButton = 0,
    kThemeCheckBox = 1,
    kThemeRadioButton = 2,
@@ -125,7 +125,7 @@ enum ThemeButtonKind : UInt16 {
    kThemeDisclosureButton = kThemeDisclosureTriangle
 } ThemeButtonKind;
 
-enum ThemeButtonValue : UInt16 {
+typedef enum ThemeButtonValue : UInt16 {
    kThemeButtonOff = 0,
    kThemeButtonOn = 1,
    kThemeButtonMixed = 2,
@@ -134,7 +134,7 @@ enum ThemeButtonValue : UInt16 {
    kThemeDisclosureLeft = 2
 } ThemeButtonValue;
 
-enum ThemeButtonAdornment : UInt16 {
+typedef enum ThemeButtonAdornment : UInt16 {
    kThemeAdornmentNone = 0,
    kThemeAdornmentDefault = (1 << 0),
    kThemeAdornmentFocus = (1 << 2),

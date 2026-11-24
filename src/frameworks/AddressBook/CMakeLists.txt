@@ -19,6 +19,7 @@ add_framework(AddressBook
 
     SOURCES
         src/AddressBook.m
+        src/XcodeLazySymbols.m
         src/ABAPIAdapter.m
         src/ABAbstractGroupEntriesFactory.m
         src/ABAbstractGroupListAction.m

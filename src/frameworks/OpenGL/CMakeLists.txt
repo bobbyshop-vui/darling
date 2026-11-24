@@ -26,6 +26,7 @@ add_framework(OpenGL
 
     SOURCES
         OpenGL.c
+        XcodeLazySymbols.c
 
     DEPENDENCIES
         system

@@ -19,6 +19,7 @@ add_framework(ImageIO
 
     SOURCES
 	    src/CGImageDestination.m
+	    src/XcodeLazySymbols.m
 	    src/CGImageProperties.m
 	    src/CGImageSource.m
 
@@ -28,4 +29,5 @@ add_framework(ImageIO
         Foundation
 	    CoreFoundation
 	    Onyx2D # Should be independent?
+	    CoreGraphics
 )

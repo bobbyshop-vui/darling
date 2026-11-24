@@ -22,6 +22,7 @@ add_framework(CoreVideo
     SOURCES
 	    src/constants.c
 	    src/stubs.c
+	    src/XcodeLazySymbols.m
         src/CVDisplayLink.mm
 
     DEPENDENCIES
