@@ -348,6 +348,7 @@ if (COMPONENT_dev_gui_common)
 	set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "cli_dev_gui_common")
 
 	add_subdirectory(libaccessibility)
+	add_subdirectory(libate)
 	add_subdirectory(external/openjdk) # *should* be in `cli` component, but requires AppKit
 endif()
 

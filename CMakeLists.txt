@@ -310,6 +310,7 @@ set(_xcode_fix_dirs
 	src/frameworks/OpenGL
 	src/frameworks/GLKit
 	src/frameworks/JavaScriptCore
+	src/libate
 	src/private-frameworks/SystemAdministration
 	src/private-frameworks/MetalTools
 	src/private-frameworks/PackageKit
