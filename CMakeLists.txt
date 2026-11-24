@@ -305,6 +305,7 @@ set(_xcode_fix_dirs
 	src/external/libtrace
 	src/external/libc
 	src/external/objc4/runtime
+	src/external/security/OSX
 	src/frameworks/WebKit
 	src/frameworks/ModelIO
 	src/frameworks/SecurityFoundation

@@ -99,7 +99,7 @@
 	url = https://github.com/darlinghq/darling-coretls.git
 [submodule "src/external/security"]
 	path = src/external/security
-	url = https://github.com/darlinghq/darling-security.git
+	url = ../darling-security.git
 [submodule "src/external/libxpc"]
 	path = src/external/libxpc
 	url = https://github.com/darlinghq/darling-libxpc.git
