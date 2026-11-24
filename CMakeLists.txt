@@ -306,6 +306,11 @@ set(_xcode_fix_dirs
 	src/external/libc
 	src/external/objc4/runtime
 	src/external/security/OSX
+	src/external/security/trust/trustd
+	src/external/libxpc
+	src/external/iokitd
+	src/external/xnu/darling/src/libsystem_kernel
+	src/launchd
 	src/frameworks/WebKit
 	src/frameworks/ModelIO
 	src/frameworks/SecurityFoundation

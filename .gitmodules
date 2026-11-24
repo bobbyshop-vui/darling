@@ -102,7 +102,7 @@
 	url = ../darling-security.git
 [submodule "src/external/libxpc"]
 	path = src/external/libxpc
-	url = https://github.com/darlinghq/darling-libxpc.git
+	url = ../darling-libxpc.git
 [submodule "src/external/gnutar"]
 	path = src/external/gnutar
 	url = https://github.com/darlinghq/darling-gnutar.git
@@ -290,7 +290,7 @@
 	url = https://github.com/darlinghq/darling-opendirectory.git
 [submodule "src/external/iokitd"]
 	path = src/external/iokitd
-	url = https://github.com/darlinghq/darling-iokitd.git
+	url = ../darling-iokitd.git
 [submodule "src/external/OpenAL"]
 	path = src/external/OpenAL
 	url = https://github.com/darlinghq/darling-openal.git

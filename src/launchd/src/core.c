@@ -5030,8 +5030,13 @@ job_postfork_become_user(job_t j)
 
 	if (j->username) {
 		if ((pwe = job_getpwnam(j, j->username)) == NULL) {
+#ifdef DARLING
+			job_log(j, LOG_WARNING, "getpwnam(\"%s\") failed; user does not exist, running job with launchd's own credentials", j->username);
+			return;
+#else
 			job_log(j, LOG_ERR, "getpwnam(\"%s\") failed", j->username);
 			_exit(ESRCH);
+#endif
 		}
 	} else if (j->mach_uid) {
 		if ((pwe = getpwuid(j->mach_uid)) == NULL) {
@@ -5074,11 +5079,15 @@ job_postfork_become_user(job_t j)
 		struct group *gre;
 
 		if (unlikely((gre = job_getgrnam(j, j->groupname)) == NULL)) {
+#ifdef DARLING
+			job_log(j, LOG_WARNING, "getgrnam(\"%s\") failed; group does not exist, keeping launchd's own gid", j->groupname);
+#else
 			job_log(j, LOG_ERR, "getgrnam(\"%s\") failed", j->groupname);
 			_exit(ESRCH);
+#endif
+		} else {
+			desired_gid = gre->gr_gid;
 		}
-
-		desired_gid = gre->gr_gid;
 	}
 
 	if (job_assumes_zero_p(j, setlogin(loginname)) == -1) {
