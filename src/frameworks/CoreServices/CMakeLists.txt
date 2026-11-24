@@ -40,6 +40,7 @@ add_framework(CoreServices
 
 	SOURCES
 		constants.m
+		XcodeLazySymbols.c
 
 	DEPENDENCIES
 		FSEvents

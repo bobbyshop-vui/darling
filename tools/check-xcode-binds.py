@@ -337,6 +337,9 @@ def main():
     ap.add_argument("--jobs", type=int, default=4, help="parallel objdump invocations")
     ap.add_argument("--json", default=None, help="write the report as JSON to this path")
     ap.add_argument("--quiet", action="store_true", help="only print failures")
+    ap.add_argument("--lazy", action="store_true",
+                    help="also check lazy binds (they only fail when first called, "
+                         "e.g. \"lazy symbol binding failed\" at runtime)")
     args = ap.parse_args()
 
     prefix = os.path.abspath(args.prefix)
@@ -356,7 +359,10 @@ def main():
     index = PrefixIndex(prefix, args.build_dir)
 
     def scan(path):
-        return path, bind_table(path, "--bind"), set(bind_table(path, "--weak-bind"))
+        strong = bind_table(path, "--bind")
+        if args.lazy:
+            strong = strong + bind_table(path, "--lazy-bind")
+        return path, strong, set(bind_table(path, "--weak-bind"))
 
     results = []
     with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
