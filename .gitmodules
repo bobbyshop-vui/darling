@@ -24,7 +24,7 @@
 	url = https://github.com/darlinghq/darling-compiler-rt.git
 [submodule "src/external/corefoundation"]
 	path = src/external/corefoundation
-	url = https://github.com/darlinghq/darling-corefoundation.git
+	url = ../darling-corefoundation.git
 [submodule "src/external/icu"]
 	path = src/external/icu
 	url = https://github.com/darlinghq/darling-icu.git
@@ -168,7 +168,7 @@
 	url = https://github.com/darlinghq/cctools-port.git
 [submodule "src/external/objc4"]
 	path = src/external/objc4
-	url = https://github.com/darlinghq/darling-objc4.git
+	url = ../darling-objc4.git
 [submodule "src/external/libplatform"]
 	path = src/external/libplatform
 	url = https://github.com/darlinghq/darling-libplatform.git
@@ -183,7 +183,7 @@
 	url = https://github.com/darlinghq/darling-libclosure.git
 [submodule "src/external/configd"]
 	path = src/external/configd
-	url = https://github.com/darlinghq/darling-configd.git
+	url = ../darling-configd.git
 [submodule "src/external/IONetworkingFamily"]
 	path = src/external/IONetworkingFamily
 	url = https://github.com/darlinghq/darling-IONetworkingFamily.git
@@ -378,7 +378,7 @@
 	url = ../darling-Libc.git
 [submodule "src/external/libsystem"]
 	path = src/external/libsystem
-	url = https://github.com/darlinghq/darling-Libsystem.git
+	url = ../darling-Libsystem.git
 [submodule "src/external/dyld"]
 	path = src/external/dyld
 	url = https://github.com/darlinghq/darling-dyld.git
