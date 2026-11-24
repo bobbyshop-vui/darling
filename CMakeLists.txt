@@ -304,6 +304,7 @@ set(_xcode_fix_dirs
 	src/external/metal
 	src/external/libtrace
 	src/external/libc
+	src/external/objc4/runtime
 	src/frameworks/WebKit
 	src/frameworks/ModelIO
 	src/frameworks/SecurityFoundation
