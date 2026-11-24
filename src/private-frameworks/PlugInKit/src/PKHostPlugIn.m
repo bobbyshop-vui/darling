@@ -21,6 +21,36 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 @implementation PKHostPlugIn
 
+@synthesize url = _url;
+
+- (instancetype) initWithBundleURL: (NSURL *) url infoDictionary: (NSDictionary *) info {
+    if ((self = [super init])) {
+        _url = [url copy];
+        _info = [info copy];
+    }
+    return self;
+}
+
+- (void) dealloc {
+    [_url release];
+    [_info release];
+    [super dealloc];
+}
+
+- (NSDictionary *) infoDictionary { return _info; }
+- (NSString *) identifier { return [_info objectForKey: @"CFBundleIdentifier"]; }
+- (NSString *) version { return [_info objectForKey: @"CFBundleVersion"]; }
+
+- (NSString *) name {
+    NSString *name = [_info objectForKey: @"CFBundleDisplayName"];
+    if (name == nil) name = [_info objectForKey: @"CFBundleName"];
+    return name;
+}
+
+- (NSDictionary *) attributes {
+    return [_info objectForKey: @"NSExtension"];
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }

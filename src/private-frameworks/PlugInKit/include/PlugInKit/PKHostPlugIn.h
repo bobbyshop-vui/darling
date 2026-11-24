@@ -19,6 +19,18 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 #import <PlugInKit/PKPlugInCore.h>
 
-@interface PKHostPlugIn : PKPlugInCore
+@interface PKHostPlugIn : PKPlugInCore {
+    NSURL *_url;
+    NSDictionary *_info;
+}
+
+- (instancetype) initWithBundleURL: (NSURL *) url infoDictionary: (NSDictionary *) info;
+
+@property (readonly, copy) NSURL *url;
+@property (readonly, copy) NSString *identifier;
+@property (readonly, copy) NSString *version;
+@property (readonly, copy) NSString *name;
+@property (readonly, copy) NSDictionary *infoDictionary;
+@property (readonly, copy) NSDictionary *attributes;
 
 @end

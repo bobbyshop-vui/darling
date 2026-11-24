@@ -21,4 +21,6 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 
 + (instancetype) defaultHost;
 
+- (NSArray *) discoverPlugInsForAttributes: (id) attributes flags: (NSUInteger) flags;
+
 @end

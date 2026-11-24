@@ -49,6 +49,66 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 - (void) continuouslyDiscoverPlugInsForAttributes: (id) attributes
                                             flags: (NSUInteger) flags
                                             found: (id) foundHandler {
+    void (^handler)(NSArray *, NSError *) = [foundHandler copy];
+    if (handler == nil) return;
+    NSArray *found = [self discoverPlugInsForAttributes: attributes flags: flags];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        handler(found, nil);
+        [handler release];
+    });
+}
+
+/*
+ * Enumerate the host application's app extensions
+ * (Contents/PlugIns/*.appex and Contents/Extensions/*.appex) and return
+ * the ones whose NSExtension dictionary matches the attributes.
+ */
+- (NSArray *) discoverPlugInsForAttributes: (id) attributes flags: (NSUInteger) flags {
+    NSMutableArray *result = [NSMutableArray array];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *base = [[NSBundle mainBundle] bundlePath];
+    NSMutableArray *dirs = [NSMutableArray array];
+    NSString *builtIn = [[NSBundle mainBundle] builtInPlugInsPath];
+    if (builtIn) [dirs addObject: builtIn];
+    [dirs addObject: [[base stringByAppendingPathComponent: @"Contents"] stringByAppendingPathComponent: @"Extensions"]];
+
+    NSDictionary *wanted = [attributes isKindOfClass: [NSDictionary class]] ? attributes : nil;
+    NSMutableSet *seen = [NSMutableSet set];
+
+    for (NSString *dir in dirs) {
+        for (NSString *entry in [[fm contentsOfDirectoryAtPath: dir error: NULL] sortedArrayUsingSelector: @selector(compare:)]) {
+            if (![[entry pathExtension] isEqualToString: @"appex"]) continue;
+            NSString *path = [dir stringByAppendingPathComponent: entry];
+            NSString *plist = [path stringByAppendingPathComponent: @"Contents/Info.plist"];
+            NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile: plist];
+            if (info == nil) {
+                plist = [path stringByAppendingPathComponent: @"Info.plist"];
+                info = [NSDictionary dictionaryWithContentsOfFile: plist];
+            }
+            NSDictionary *ext = [info objectForKey: @"NSExtension"];
+            if (![ext isKindOfClass: [NSDictionary class]]) continue;
+            NSString *ident = [info objectForKey: @"CFBundleIdentifier"];
+            if (ident == nil || [seen containsObject: ident]) continue;
+
+            BOOL match = YES;
+            NSDictionary *extAttrs = [ext objectForKey: @"NSExtensionAttributes"];
+            for (id key in wanted) {
+                id want = [wanted objectForKey: key];
+                id have = [ext objectForKey: key];
+                if (have == nil && [extAttrs isKindOfClass: [NSDictionary class]]) have = [extAttrs objectForKey: key];
+                if ([key isEqual: @"NSExtensionPointIdentifier"] || have != nil) {
+                    if (![want isEqual: have]) { match = NO; break; }
+                }
+            }
+            if (!match) continue;
+            [seen addObject: ident];
+            PKHostPlugIn *plugin = [[PKHostPlugIn alloc] initWithBundleURL: [NSURL fileURLWithPath: path isDirectory: YES]
+                                                            infoDictionary: info];
+            [result addObject: plugin];
+            [plugin release];
+        }
+    }
+    return result;
 }
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
