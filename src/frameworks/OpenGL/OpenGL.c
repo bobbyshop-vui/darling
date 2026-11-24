@@ -24,6 +24,29 @@
 
 static EGLDisplay display;
 
+// The native display handed to us by the windowing backend is always an X11
+// Display*. eglGetDisplay() lets Mesa pick the platform from EGL_PLATFORM or the
+// session type, so on a Wayland session it treats the Display* as a wl_display
+// and crashes. Ask for the X11 platform explicitly.
+#ifndef EGL_PLATFORM_X11_KHR
+#define EGL_PLATFORM_X11_KHR 0x31D5
+#endif
+
+typedef EGLDisplay (*_CGLGetPlatformDisplayFn)(EGLenum platform, void *native_display, const EGLint *attrib_list);
+
+static EGLDisplay _CGLGetX11Display(void *native_display)
+{
+    _CGLGetPlatformDisplayFn fn = (_CGLGetPlatformDisplayFn) eglGetProcAddress("eglGetPlatformDisplay");
+    if (fn == NULL)
+        fn = (_CGLGetPlatformDisplayFn) eglGetProcAddress("eglGetPlatformDisplayEXT");
+    if (fn != NULL) {
+        EGLDisplay d = fn(EGL_PLATFORM_X11_KHR, native_display, NULL);
+        if (d != EGL_NO_DISPLAY)
+            return d;
+    }
+    return eglGetDisplay(native_display);
+}
+
 static EGLConfig config;
 static int num_config;
 
@@ -93,7 +116,7 @@ static int attributes_count(const CGLPixelFormatAttribute *attrs) {
 
 CGLError CGLRegisterNativeDisplay(void *native_display) {
 
-    display = eglGetDisplay(native_display);
+    display = _CGLGetX11Display(native_display);
 
     if (display == EGL_NO_DISPLAY) {
         return kCGLBadConnection;
@@ -117,7 +140,7 @@ static struct _CGLDisplay* getCGLDisplay(CGSConnectionID cid)
 
     if (!rv)
     {
-        EGLDisplay disp = eglGetDisplay(_CGSNativeDisplay(cid));
+        EGLDisplay disp = _CGLGetX11Display(_CGSNativeDisplay(cid));
         if (disp == EGL_NO_DISPLAY)
             return NULL;
 
