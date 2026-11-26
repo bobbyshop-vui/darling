@@ -58,6 +58,7 @@ if (COMPONENT_dev_gui_stubs_common)
 	add_subdirectory(Contacts)
 	add_subdirectory(CoreMedia)
 	add_subdirectory(DiskArbitration)
+	add_subdirectory(GameplayKit)
 	add_subdirectory(GLKit)
 	if (NOT COMPONENT_jsc)
 		# stub with the symbols Xcode binds; the real engine is src/external/JavaScriptCore

@@ -325,6 +325,7 @@ set(_xcode_fix_dirs
 	src/frameworks/AddressBook
 	src/frameworks/OpenGL
 	src/frameworks/GLKit
+	src/frameworks/GameplayKit
 	src/frameworks/JavaScriptCore
 	src/libate
 	src/private-frameworks/SystemAdministration
