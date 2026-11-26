@@ -18,10 +18,26 @@
 */
 
 #include <Foundation/Foundation.h>
+#include <CoreGraphics/CoreGraphics.h>
 
-@interface CIImage : NSObject
+@interface CIImage : NSObject <NSCopying> {
+    CGImageRef _cgImage;
+}
 
-// AppKit NSCIImageRep additions. There is no CI rendering backend yet, so these draw nothing.
++ (CIImage *)emptyImage;
++ (CIImage *)imageWithCGImage:(CGImageRef)image;
++ (CIImage *)imageWithCGImage:(CGImageRef)image options:(NSDictionary *)options;
+- (instancetype)initWithCGImage:(CGImageRef)image;
+- (instancetype)initWithCGImage:(CGImageRef)image options:(NSDictionary *)options;
+
+// Darling's images are rendered bitmaps: the extent is the bitmap's bounds.
+- (CGRect)extent;
+- (CGImageRef)CGImage;
+
+- (CIImage *)imageByApplyingFilter:(NSString *)filterName withInputParameters:(NSDictionary *)params;
+- (CIImage *)imageByCroppingToRect:(CGRect)rect;
+
+// AppKit's NSCIImageRep additions: draw into the current NSGraphicsContext.
 - (void)drawAtPoint:(NSPoint)point fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta;
 - (void)drawInRect:(NSRect)dstRect fromRect:(NSRect)srcRect operation:(NSUInteger)op fraction:(CGFloat)delta;
 

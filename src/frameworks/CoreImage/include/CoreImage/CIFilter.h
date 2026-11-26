@@ -18,9 +18,40 @@
 */
 
 #include <Foundation/Foundation.h>
+#include <CoreGraphics/CoreGraphics.h>
 
 extern NSString *const kCIInputRadiusKey;
 
-@interface CIFilter : NSObject
+@class CIImage;
+
+extern NSString * const kCIInputImageKey;
+extern NSString * const kCIOutputImageKey;
+extern NSString * const kCIInputAngleKey;
+extern NSString * const kCIInputSaturationKey;
+extern NSString * const kCIInputBrightnessKey;
+extern NSString * const kCIInputContrastKey;
+extern NSString * const kCIAttributeFilterName;
+
+// Filters run on the CPU over rendered bitmaps. Darling implements
+// CIColorInvert, CIHueAdjust and CIColorControls; other names give nil, as
+// unknown filter names do on macOS.
+@interface CIFilter : NSObject <NSCopying> {
+    NSString *_name;
+    NSMutableDictionary *_values;
+}
+
++ (CIFilter *)filterWithName:(NSString *)name;
++ (CIFilter *)filterWithName:(NSString *)name keysAndValues:(id)key0, ... NS_REQUIRES_NIL_TERMINATION;
++ (CIFilter *)filterWithName:(NSString *)name withInputParameters:(NSDictionary *)params;
++ (NSArray *)filterNamesInCategory:(NSString *)category;
++ (NSArray *)filterNamesInCategories:(NSArray *)categories;
++ (NSString *)localizedNameForFilterName:(NSString *)filterName;
+
+- (NSString *)name;
+- (NSArray *)inputKeys;
+- (NSArray *)outputKeys;
+- (NSDictionary *)attributes;
+- (CIImage *)outputImage;
+- (void)setDefaults;
 
 @end

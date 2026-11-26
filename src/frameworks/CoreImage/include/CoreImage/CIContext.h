@@ -18,7 +18,21 @@
 */
 
 #include <Foundation/Foundation.h>
+#include <CoreGraphics/CoreGraphics.h>
 
-@interface CIContext : NSObject
+@class CIImage;
+
+@interface CIContext : NSObject {
+    CGContextRef _cgContext;
+}
+
++ (CIContext *)context;
++ (CIContext *)contextWithOptions:(NSDictionary *)options;
++ (CIContext *)contextWithCGContext:(CGContextRef)cgContext options:(NSDictionary *)options;
+
+- (CGImageRef)createCGImage:(CIImage *)image fromRect:(CGRect)fromRect;
+- (CGImageRef)createCGImage:(CIImage *)image fromRect:(CGRect)fromRect format:(int)format colorSpace:(CGColorSpaceRef)colorSpace;
+- (void)drawImage:(CIImage *)image inRect:(CGRect)inRect fromRect:(CGRect)fromRect;
+- (void)drawImage:(CIImage *)image atPoint:(CGPoint)atPoint fromRect:(CGRect)fromRect;
 
 @end
