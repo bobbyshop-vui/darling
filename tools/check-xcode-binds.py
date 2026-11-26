@@ -187,6 +187,30 @@ def bind_table(path, kind):
     return out
 
 
+def weak_import_classes(path):
+    """Weak-imported Objective-C classes from the non-lazy bind table.
+
+    dyld binds a missing weak import to NULL instead of failing, but for an
+    Objective-C class that is still fatal in practice: a subclass whose
+    superclass is missing is dropped by the runtime, so references to the
+    subclass become nil (e.g. DVTTextStorage, a subclass of AppKit's
+    NSConcreteTextStorage)."""
+    try:
+        r = subprocess.run(["llvm-objdump", "--macho", "--bind", path],
+                           capture_output=True, text=True, timeout=900)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    out = []
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) < 6 or parts[-1] != "(weak_import)":
+            continue
+        symbol, dylib = parts[-2], parts[-3]
+        if symbol.startswith("_OBJC_CLASS_$_"):
+            out.append((dylib, symbol))
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Prefix indexing
 # --------------------------------------------------------------------------- #
@@ -337,6 +361,9 @@ def main():
     ap.add_argument("--jobs", type=int, default=4, help="parallel objdump invocations")
     ap.add_argument("--json", default=None, help="write the report as JSON to this path")
     ap.add_argument("--quiet", action="store_true", help="only print failures")
+    ap.add_argument("--weak-classes", action="store_true",
+                    help="also check weak-imported Objective-C classes (a missing "
+                         "one silently drops its subclasses)")
     ap.add_argument("--lazy", action="store_true",
                     help="also check lazy binds (they only fail when first called, "
                          "e.g. \"lazy symbol binding failed\" at runtime)")
@@ -362,6 +389,8 @@ def main():
         strong = bind_table(path, "--bind")
         if args.lazy:
             strong = strong + bind_table(path, "--lazy-bind")
+        if args.weak_classes:
+            strong = strong + weak_import_classes(path)
         return path, strong, set(bind_table(path, "--weak-bind"))
 
     results = []

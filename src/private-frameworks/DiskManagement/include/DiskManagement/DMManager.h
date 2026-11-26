@@ -17,6 +17,24 @@ You should have received a copy of the GNU General Public License
 along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-@interface DMManager : NSObject
+@class NSError, NSString;
+
+// DADiskRef / DASessionRef, kept opaque to avoid a DiskArbitration dependency.
+@interface DMManager : NSObject {
+    void *_defaultDASession;
+}
+
+- (void)setDefaultDASession:(void *)session;
+- (void *)defaultDASession;
+
+// Darling has no DiskArbitration disks: these return NULL.
+- (void *)copyRootDisk:(NSError **)error;
+- (void *)copyDiskForPath:(NSString *)path error:(NSError **)error;
+
+- (BOOL)isOnSameWholeDiskAsRoot:(void *)disk error:(NSError **)error;
+- (BOOL)isAppleDiskImage:(void *)disk error:(NSError **)error;
+- (BOOL)isNetworkDisk:(void *)disk error:(NSError **)error;
+- (BOOL)isSolidStateDisk:(void *)disk error:(NSError **)error;
+- (BOOL)isInternalDisk:(void *)disk error:(NSError **)error;
 
 @end

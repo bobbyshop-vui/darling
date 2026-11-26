@@ -331,6 +331,7 @@ set(_xcode_fix_dirs
 	src/private-frameworks/MetalTools
 	src/private-frameworks/PackageKit
 	src/private-frameworks/PlugInKit
+	src/private-frameworks/DiskManagement
 )
 
 # Resolve the Xcode path at *configure* time: the install target is typically run
@@ -352,6 +353,16 @@ foreach(_dir ${_xcode_fix_dirs})
 	list(APPEND _xcode_fix_cmds
 		COMMAND ${CMAKE_COMMAND} --install "${CMAKE_BINARY_DIR}/${_dir}")
 endforeach()
+
+# darlingserver is normally running while this target runs, and copying over a
+# running executable fails with "Text file busy".  Install it under a temporary
+# name and rename it into place: the running server keeps the old file until
+# `darling shutdown`, and the next container starts the new one.
+list(APPEND _xcode_fix_cmds
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:darlingserver>
+		${CMAKE_INSTALL_PREFIX}/bin/darlingserver.new
+	COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_INSTALL_PREFIX}/bin/darlingserver.new
+		${CMAKE_INSTALL_PREFIX}/bin/darlingserver)
 
 if (DARLING_XCODE_BIND_CHECK)
 	list(APPEND _xcode_fix_cmds
