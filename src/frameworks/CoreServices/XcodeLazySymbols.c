@@ -16,6 +16,7 @@
 #include <FSEvents/FSEvents.h>
 
 #include <errno.h>
+#include <mach/machine.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -433,10 +434,18 @@ XCODE_EXPORT ItemCount UCKeyboardLayoutStringMax(const void *keyboardLayout)
 
 XCODE_EXPORT UInt32 _CSGetProcessorArchitecture(void)
 {
-	/* Gestalt style architecture code, as returned for gestaltSysArchitecture. */
-#if defined(__powerpc__)
-	return gestaltPowerPC;
+	/*
+	 * The Mach CPU type of the processor (not a Gestalt code): Xcode's
+	 * DevToolsSupport looks it up with NXGetArchInfoFromCpuType() and uses
+	 * the name, so an unknown type crashes it.
+	 */
+#if defined(__x86_64__) || defined(__i386__)
+	return CPU_TYPE_X86_64;
+#elif defined(__aarch64__) || defined(__arm__)
+	return CPU_TYPE_ARM64;
+#elif defined(__powerpc64__)
+	return CPU_TYPE_POWERPC64;
 #else
-	return gestaltIntel;
+	return CPU_TYPE_ANY;
 #endif
 }
